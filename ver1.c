@@ -5,7 +5,9 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <ctype.h>
+#include <time.h>
 
+const char *months[12] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 int err_count = 0;
 int line_num = 0;
 
@@ -21,8 +23,9 @@ int get_error_num(char *ptr) {
             ptr_copy = error_ptr + 1;
         }
     }
-    if (error_ptr != NULL) {
-        while (!isdigit(*error_ptr)) {
+    if (error_ptr  != NULL) {
+        while (!isdigit(*error_ptr))
+        {
             error_ptr++;
         }
         for (int i = 0; i < 3; i++) {
@@ -32,6 +35,56 @@ int get_error_num(char *ptr) {
         error_num = atoi(error);
     }
     return error_num;
+}
+
+struct tm t_stamp(char *str) {
+    struct tm time = {0};
+    time.tm_sec = -1;
+    time.tm_year = -1900;
+    char *ptr;
+    ptr = strstr(str, "[");
+    if (ptr != NULL) {
+        ptr++;
+        char buff[2] = "\0";
+        char mnth[4] = "\0";
+        char year[5] = "\0";
+
+        buff[0] = *(ptr);
+        buff[1] = *(ptr + 1);
+
+        time.tm_mday = atoi(buff);
+
+        ptr = ptr + 3;
+        mnth[0] = *ptr;
+        mnth[1] = *(ptr + 1);
+        mnth[2] = *(ptr + 2);
+        for (int i = 0; i < 12; i++) {
+            if (strcmp(mnth, months[i]) == 0) {
+                time.tm_mon = i;
+                break;
+            }
+        }
+        ptr = ptr + 4;
+        year[0] = *(ptr);
+        year[1] = *(ptr + 1);
+        year[2] = *(ptr + 2);
+        year[3] = *(ptr + 3);
+        time.tm_year += atoi(year);
+        ptr = ptr + 5;
+
+        buff[0] = *ptr;
+        buff[1] = *(ptr + 1);
+        time.tm_hour = atoi(buff);
+        ptr = ptr + 3;
+        buff[0] = *ptr;
+        buff[1] = *(ptr + 1);
+        time.tm_min = atoi(buff);
+        ptr = ptr + 3;
+        buff[0] = *ptr;
+        buff[1] = *(ptr + 1);
+        time.tm_sec = atoi(buff);
+    }
+    return time;
 }
 
 void request_parse(FILE *fptr, char *str, int error_num) {
@@ -54,25 +107,83 @@ void request_parse(FILE *fptr, char *str, int error_num) {
 int main(int argc, char *argv[]) {
     char str[512] = "\0";
     FILE *ptr = NULL;
+    FILE *backing_ptr = NULL;
     FILE *wptr = NULL;
     if (argc >= 2) {
         ptr = fopen(argv[1], "r");
-        wptr = fopen(argv[2], "r");
+        backing_ptr = fopen(argv[1], "r");
     }
-    if (ptr == NULL) {
+    if (argc >= 4) {
+        wptr = fopen(argv[3], "w");
+    }
+    //Переменные для параметризации окна
+    struct tm upper_bound_t;
+    struct tm lower_bound_t;
+    long long request_count = 0;
+    long long diff_t;
+    long long max_request_count = 0;
+    struct tm upper_time;
+    struct tm lower_time;
+
+
+    if (ptr == NULL || backing_ptr == NULL) {
         fprintf(stderr, "The program has encountered a problem whilst trying to open a '.log' file\nError code:%d",
                 errno);
     } else if (wptr == NULL) {
         fprintf(stderr, "The program has encountered a problem whilst trying to open an output file\n");
     } else {
+        if (argv[2] != NULL) {
+            fgets(str, 512, backing_ptr);
+            struct tm temp = t_stamp(str);
+            upper_bound_t = temp;
+            lower_bound_t = temp;
+            diff_t = atoll(argv[2]) - 1;
+        }
+
         while (fgets(str, 512, ptr) != NULL) {
             line_num++;
             int i = get_error_num(str);
             if (i >= 500 && i < 600) {
                 request_parse(wptr, str, i);
             }
+            if (argv[2] != NULL) {
+                struct tm temp = t_stamp(str);
+                if (temp.tm_sec > -1) {
+                    lower_bound_t = temp;
+                }
+                request_count++;
+                if ((mktime(&lower_bound_t) - mktime(&upper_bound_t)) <= diff_t) {
+                    if (request_count > max_request_count) {
+                        max_request_count = request_count;
+                        upper_time = upper_bound_t;
+                        lower_time = lower_bound_t;
+                    }
+                } else {
+                    while ((mktime(&lower_bound_t) - mktime(&upper_bound_t)) > diff_t) {
+                        fgets(str, 512, backing_ptr);
+                        temp = t_stamp(str);
+                        if (temp.tm_sec > -1) {
+                            upper_bound_t = temp;
+                        }
+                        request_count--;
+                    }
+                }
+            }
+            if (request_count > max_request_count) {
+                max_request_count = request_count;
+                upper_time = upper_bound_t;
+                lower_time = lower_bound_t;
+            }
         }
-        printf("The results have been successfully parsed to the designated file.");
+        if (argc >= 3) {
+            printf("%s", asctime(&upper_time));
+            printf("%lli\n", max_request_count);
+            printf("%s", asctime(&lower_time));
+            fclose(ptr);
+            fclose(backing_ptr);
+            fclose(wptr);
+            return 0;
+        }
     }
-    return 0;
+
 }
