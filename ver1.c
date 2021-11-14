@@ -105,7 +105,7 @@ void request_parse(FILE *fptr, char *str, int error_num) {
 
 
 int main(int argc, char *argv[]) {
-    char str[512] = "\0";
+    char str[2048] = "\0";
     FILE *ptr = NULL;
     FILE *backing_ptr = NULL;
     FILE *wptr = NULL;
