@@ -6,9 +6,9 @@ name: CI
 on:
   # Triggers the workflow on push or pull request events but only for the master branch
   push:
-    branches: [ lab1, lab3 ]
+    branches: [ master ]
   pull_request:
-    branches: [ lab1, lab3 ]
+    branches: [ master ]
 
 
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
@@ -25,7 +25,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: install gcc
-        run: apt install gcc
+        run: apt-get install gcc
 
       - name: compile
         run: gcc -o test var1.c
