@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "The program has encountered a problem whilst trying to open an output file\n");
     } else {
         if (argv[2] != NULL) {
-            fgets(str, 512, backing_ptr);
+            fgets(str, 2048, backing_ptr);
             struct tm temp = t_stamp(str);
             upper_bound_t = temp;
             lower_bound_t = temp;
@@ -160,7 +160,7 @@ int main(int argc, char *argv[]) {
                     }
                 } else {
                     while ((mktime(&lower_bound_t) - mktime(&upper_bound_t)) > diff_t) {
-                        fgets(str, 512, backing_ptr);
+                        fgets(str, 2048, backing_ptr);
                         temp = t_stamp(str);
                         if (temp.tm_sec > -1) {
                             upper_bound_t = temp;
