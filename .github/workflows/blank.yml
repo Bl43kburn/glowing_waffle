@@ -28,4 +28,4 @@ jobs:
         run: sudo apt-get install gcc
 
       - name: compile
-        run: gcc -o test var1.c
+        run: gcc -o test ver1.c
