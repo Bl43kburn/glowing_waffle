@@ -25,7 +25,7 @@ jobs:
 
       # Runs a single command using the runners shell
       - name: install gcc
-        run: apt-get install gcc
+        run: sudo apt-get install gcc
 
       - name: compile
         run: gcc -o test var1.c
