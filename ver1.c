@@ -133,7 +133,7 @@ int main(int argc, char *argv[]) {
         fprintf(stderr, "The program has encountered a problem whilst trying to open an output file\n");
     } else {
         if (argv[2] != NULL) {
-            fgets(str, 2048, backing_ptr);
+            fgets(str, 2049, backing_ptr);
             struct tm temp = t_stamp(str);
             upper_bound_t = temp;
             lower_bound_t = temp;
